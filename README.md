@@ -18,6 +18,10 @@ License
 The SDK itself is licensed under BSD 2-clause license.
 The demo applications are licensed under GPLv3 license.
 
+Fork
+-----
+This fork is maintained by [Vishvam Corp](http://www.vishwamcorp.com/) to provide fixes and improvements to the original SDK for own use and for the community.
+
 Release Notes
 -------------
 * [v2.1.0](https://github.com/slamtec/rplidar_sdk/blob/master/docs/ReleaseNote.v2.1.0.md)
@@ -114,7 +118,7 @@ Usually you only need to include this file to get all functions of RPLIDAR SDK.
 
 For example:
 
-    #include "sl_lidar.h" 
+    #include "sl_lidar.h"
 	#include "sl_lidar_driver.h"
 
     int main(int argc, char* argv)
@@ -140,7 +144,7 @@ For example:
             fprintf(stderr, "Failed to connect to LIDAR %08x\r\n", res);
         }
         // TODO
-		
+
         /// Delete Lidar Driver and channel Instance
         * delete *lidar;
         * delete *channel;
@@ -195,9 +199,9 @@ The defination of `rplidar_response_measurement_node_hq_t` is:
     #endif
 
     typedef struct sl_lidar_response_measurement_node_hq_t {
-        _u16   angle_z_q14; 
-        _u32   dist_mm_q2; 
-        _u8    quality;  
+        _u16   angle_z_q14;
+        _u32   dist_mm_q2;
+        _u8    quality;
         _u8    flag;
     } __attribute__((packed)) sl_lidar_response_measurement_node_hq_t;
 
