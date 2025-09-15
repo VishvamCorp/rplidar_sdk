@@ -26,7 +26,7 @@
 namespace rp{ namespace net {
 
 
-static inline int _halAddrTypeToOSType(SocketAddress::address_type_t type) 
+static inline int _halAddrTypeToOSType(SocketAddress::address_type_t type)
 {
     switch (type) {
         case SocketAddress::ADDRESS_TYPE_INET:
@@ -43,11 +43,11 @@ static inline int _halAddrTypeToOSType(SocketAddress::address_type_t type)
 }
 
 
-SocketAddress::SocketAddress() 
+SocketAddress::SocketAddress()
 {
     _platform_data = reinterpret_cast<void *>(new sockaddr_storage);
     memset(_platform_data, 0, sizeof(sockaddr_storage));
-    
+
     reinterpret_cast<sockaddr_storage *>(_platform_data)->ss_family = AF_INET;
 }
 
@@ -63,7 +63,7 @@ SocketAddress::SocketAddress(const char * addrString, int port, SocketAddress::a
 {
     _platform_data = reinterpret_cast<void *>(new sockaddr_storage);
     memset(_platform_data, 0, sizeof(sockaddr_storage));
-    
+
     // default to ipv4 in case the following operation fails
     reinterpret_cast<sockaddr_storage *>(_platform_data)->ss_family = AF_INET;
 
@@ -134,17 +134,16 @@ u_result SocketAddress::setAddressFromString(const char * address_string,  Socke
     switch (type) {
         case ADDRESS_TYPE_INET:
             reinterpret_cast<sockaddr_storage *>(_platform_data)->ss_family = AF_INET;
-            ans = inet_pton(AF_INET, 
-                            address_string, 
+            ans = inet_pton(AF_INET,
+                            address_string,
                             &reinterpret_cast<sockaddr_in *>(_platform_data)->sin_addr);
         break;
 
 
         case ADDRESS_TYPE_INET6:
-            
             reinterpret_cast<sockaddr_storage *>(_platform_data)->ss_family = AF_INET6;
-            ans = inet_pton(AF_INET6, 
-                            address_string, 
+            ans = inet_pton(AF_INET6,
+                            address_string,
                             &reinterpret_cast<sockaddr_in6  *>(_platform_data)->sin6_addr);
         break;
 
@@ -191,7 +190,7 @@ size_t SocketAddress::LoopUpHostName(const char * hostname, const char * sevicen
 
     if (!performDNS) {
         hints.ai_family |= AI_NUMERICSERV | AI_NUMERICHOST;
-    
+
     }
 
     ans = getaddrinfo(hostname, sevicename, &hints, &result);
@@ -203,7 +202,7 @@ size_t SocketAddress::LoopUpHostName(const char * hostname, const char * sevicen
         return 0;
     }
 
-    
+
     for (struct addrinfo * cursor = result; cursor != NULL; cursor = cursor->ai_next) {
         if (cursor->ai_family == ADDRESS_TYPE_INET || cursor->ai_family == ADDRESS_TYPE_INET6) {
             sockaddr_storage * storagebuffer = new sockaddr_storage;
@@ -213,7 +212,7 @@ size_t SocketAddress::LoopUpHostName(const char * hostname, const char * sevicen
         }
     }
 
-    
+
     freeaddrinfo(result);
 
     return addresspool.size();
@@ -228,7 +227,7 @@ u_result SocketAddress::getRawAddress(_u8 * buffer, size_t bufferSize) const
 
             memcpy(buffer, &reinterpret_cast<const sockaddr_in *>(_platform_data)->sin_addr.s_addr, sizeof(reinterpret_cast<const sockaddr_in *>(_platform_data)->sin_addr.s_addr));
 
-            
+
             break;
         case ADDRESS_TYPE_INET6:
             if (bufferSize < sizeof(in6_addr::s6_addr)) return RESULT_INSUFFICIENT_MEMORY;
@@ -316,7 +315,7 @@ void SocketAddress::setAnyAddress(SocketAddress::address_type_t type)
 ///--------------------------------
 
 
-namespace rp { namespace arch { namespace net{ 
+namespace rp { namespace arch { namespace net{
 
 using namespace rp::net;
 
@@ -335,7 +334,7 @@ public:
         this->setTimeout(DEFAULT_SOCKET_TIMEOUT, SOCKET_DIR_BOTH);
     }
 
-    virtual ~StreamSocketImpl() 
+    virtual ~StreamSocketImpl()
     {
         close(_socket_fd);
     }
@@ -376,8 +375,8 @@ public:
     {
         int ans;
         timeval tv;
-        tv.tv_sec = timeout / 1000; 
-        tv.tv_usec = (timeout % 1000) * 1000; 
+        tv.tv_sec = timeout / 1000;
+        tv.tv_usec = (timeout % 1000) * 1000;
 
         if (msk & SOCKET_DIR_RD) {
              ans = ::setsockopt( _socket_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv) );
@@ -391,7 +390,7 @@ public:
 
         return RESULT_OK;
     }
-  
+
     virtual u_result connect(const SocketAddress & pairAddress)
     {
         const struct sockaddr * addr = reinterpret_cast<const struct sockaddr *>(pairAddress.getPlatformData());
@@ -412,7 +411,7 @@ public:
                 return RESULT_OPERATION_FAIL;
         }
     }
-      
+
     virtual u_result listen(int backlog)
     {
         int ans = ::listen( _socket_fd,   backlog);
@@ -420,7 +419,7 @@ public:
         return ans?RESULT_OPERATION_FAIL:RESULT_OK;
     }
 
-    virtual StreamSocket * accept(SocketAddress * pairAddress) 
+    virtual StreamSocket * accept(SocketAddress * pairAddress)
     {
         size_t addrsize;
         addrsize = sizeof(sockaddr_storage);
@@ -439,7 +438,7 @@ public:
         return waitforData(timeout);
     }
 
-    virtual u_result send(const void * buffer, size_t len) 
+    virtual u_result send(const void * buffer, size_t len)
     {
         size_t ans = ::send( _socket_fd, buffer, len, MSG_NOSIGNAL);
         if (ans == len) {
@@ -455,7 +454,7 @@ public:
                     return RESULT_OPERATION_FAIL;
             }
         }
-        
+
     }
 
 
@@ -463,7 +462,7 @@ public:
     {
         size_t ans = ::recv( _socket_fd, buf, len, 0);
         if (ans == (size_t)-1) {
-            recv_len = 0;  
+            recv_len = 0;
 
             switch (errno) {
                 case EAGAIN:
@@ -475,7 +474,7 @@ public:
                     return RESULT_OPERATION_FAIL;
             }
 
-            
+
 
         } else {
             recv_len = ans;
@@ -488,9 +487,9 @@ public:
     {
         size_t ans = ::recv( _socket_fd, buf, len, MSG_DONTWAIT);
         if (ans == (size_t)-1) {
-            recv_len = 0;  
+            recv_len = 0;
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                return RESULT_OK; 
+                return RESULT_OK;
             } else {
                 return RESULT_OPERATION_FAIL;
             }
@@ -544,13 +543,13 @@ public:
         return ::setsockopt( _socket_fd, SOL_SOCKET, SO_KEEPALIVE , &bool_true, sizeof(bool_true) )?RESULT_OPERATION_FAIL:RESULT_OK;
     }
 
-    virtual u_result enableNoDelay(bool enable ) 
+    virtual u_result enableNoDelay(bool enable )
     {
         int bool_true = enable?1:0;
         return ::setsockopt( _socket_fd, IPPROTO_TCP, TCP_NODELAY,&bool_true, sizeof(bool_true) )?RESULT_OPERATION_FAIL:RESULT_OK;
     }
 
-    virtual u_result waitforSent(_u32 timeout ) 
+    virtual u_result waitforSent(_u32 timeout )
     {
         fd_set wrset;
         FD_ZERO(&wrset);
@@ -618,7 +617,7 @@ public:
         setTimeout(DEFAULT_SOCKET_TIMEOUT, SOCKET_DIR_BOTH);
     }
 
-    virtual ~DGramSocketImpl() 
+    virtual ~DGramSocketImpl()
     {
         close(_socket_fd);
     }
@@ -659,8 +658,8 @@ public:
     {
         int ans;
         timeval tv;
-        tv.tv_sec = timeout / 1000; 
-        tv.tv_usec = (timeout % 1000) * 1000; 
+        tv.tv_sec = timeout / 1000;
+        tv.tv_usec = (timeout % 1000) * 1000;
 
         if (msk & SOCKET_DIR_RD) {
              ans = ::setsockopt( _socket_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv) );
@@ -674,9 +673,9 @@ public:
 
         return RESULT_OK;
     }
-  
 
-    virtual u_result waitforSent(_u32 timeout ) 
+
+    virtual u_result waitforSent(_u32 timeout )
     {
         fd_set wrset;
         FD_ZERO(&wrset);
@@ -730,7 +729,7 @@ public:
         int dest_addr_size = (target ? sizeof(sockaddr_storage) : 0);
         int ans = ::sendto(_socket_fd, (const char *)buffer, (int)len, 0, addr, dest_addr_size);
         if (ans != -1) {
-            assert(ans == len);
+            assert(ans == static_cast<int>(len));
             return RESULT_OK;
         } else {
             switch (errno) {
@@ -745,7 +744,7 @@ public:
                 default:
                     return RESULT_OPERATION_FAIL;
             }
-        
+
         }
 
     }
@@ -760,7 +759,7 @@ public:
         return ans ? RESULT_OPERATION_FAIL : RESULT_OK;
 
     }
-    
+
     virtual u_result clearRxCache()
     {
         timeval tv;
@@ -788,7 +787,7 @@ public:
 
         size_t ans = ::recvfrom( _socket_fd, buf, len, 0, addr, (socklen_t*)&source_addr_size);
         if (ans == (size_t)-1) {
-            recv_len = 0;  
+            recv_len = 0;
             switch (errno) {
                 case EAGAIN:
 #if EWOULDBLOCK!=EAGAIN
@@ -816,9 +815,9 @@ public:
         size_t ans = ::recvfrom( _socket_fd, buf, len, MSG_DONTWAIT, addr, &source_addr_size);
 
         if (ans == (size_t)-1) {
-            recv_len = 0;  
+            recv_len = 0;
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                return RESULT_OK; 
+                return RESULT_OK;
             } else {
                 return RESULT_OPERATION_FAIL;
             }
@@ -831,7 +830,7 @@ public:
 
     }
 #endif
-    
+
 protected:
     int  _socket_fd;
 
@@ -841,7 +840,7 @@ protected:
 }}}
 
 
-namespace rp { namespace net{ 
+namespace rp { namespace net{
 
 
 static inline int _socketHalFamilyToOSFamily(SocketBase::socket_family_t family)
