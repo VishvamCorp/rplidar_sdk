@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.25)
 project(RPLIDAR_SDK VERSION 2.1.0 LANGUAGES C CXX)
 
 # Set C++ standard
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set C standard

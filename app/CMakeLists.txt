@@ -23,7 +23,7 @@ function(add_rplidar_app APP_NAME)
     # Set output properties
     set_target_properties(${APP_NAME} PROPERTIES
         LANGUAGE CXX
-        CXX_STANDARD 11
+        CXX_STANDARD 17
     )
 
     # Paranoid build settings for applications

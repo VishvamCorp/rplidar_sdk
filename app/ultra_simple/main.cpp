@@ -28,8 +28,9 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
+#include <memory>
 
-#include "sl_lidar.h" 
+#include "sl_lidar.h"
 #include "sl_lidar_driver.h"
 #ifndef _countof
 #define _countof(_Array) (int)(sizeof(_Array) / sizeof(_Array[0]))
@@ -40,7 +41,7 @@
 #define delay(x)   ::Sleep(x)
 #else
 #include <unistd.h>
-static inline void delay(sl_word_size_t ms){
+static inline void delay(sl_word_size_t ms) {
     while (ms>=1000){
         usleep(1000*1000);
         ms-=1000;
@@ -64,7 +65,7 @@ void print_usage(int argc, const char * argv[])
            , argv[0], argv[0]);
 }
 
-bool checkSLAMTECLIDARHealth(ILidarDriver * drv)
+bool checkSLAMTECLIDARHealth(std::shared_ptr<ILidarDriver> drv)
 {
     sl_result     op_result;
     sl_lidar_response_device_health_t healthinfo;
@@ -94,7 +95,7 @@ void ctrlc(int)
 }
 
 int main(int argc, const char * argv[]) {
-	const char * opt_is_channel = NULL; 
+	const char * opt_is_channel = NULL;
 	const char * opt_channel = NULL;
     const char * opt_channel_param_first = NULL;
 	sl_u32         opt_channel_param_second = 0;
@@ -104,14 +105,14 @@ int main(int argc, const char * argv[]) {
 
 	bool useArgcBaudrate = false;
 
-    IChannel* _channel;
+    std::shared_ptr<IChannel> _channel;
 
     printf("Ultra simple LIDAR data grabber for SLAMTEC LIDAR.\n"
            "Version: %s\n", SL_LIDAR_SDK_VERSION);
 
-	 
+
 	if (argc>1)
-	{ 
+	{
 		opt_is_channel = argv[1];
 	}
 	else
@@ -127,7 +128,7 @@ int main(int argc, const char * argv[]) {
 			// read serial port from the command line...
 			opt_channel_param_first = argv[3];// or set to a fixed value: e.g. "com3"
 			// read baud rate from the command line if specified...
-			if (argc>4) opt_channel_param_second = strtoul(argv[4], NULL, 10);	
+			if (argc>4) opt_channel_param_second = strtoul(argv[4], NULL, 10);
 			useArgcBaudrate = true;
 		}
 		else if(strcmp(opt_channel, "-u")==0||strcmp(opt_channel, "--udp")==0)
@@ -163,9 +164,9 @@ int main(int argc, const char * argv[]) {
 		}
 	}
 
-    
+
     // create the driver instance
-	ILidarDriver * drv = *createLidarDriver();
+    auto drv = createLidarDriver();
 
     if (!drv) {
         fprintf(stderr, "insufficent memory, exit\n");
@@ -177,17 +178,16 @@ int main(int argc, const char * argv[]) {
 
     if(opt_channel_type == CHANNEL_TYPE_SERIALPORT){
         if(useArgcBaudrate){
-            _channel = (*createSerialPortChannel(opt_channel_param_first, opt_channel_param_second));
+            _channel = createSerialPortChannel(opt_channel_param_first, opt_channel_param_second);
             if (SL_IS_OK((drv)->connect(_channel))) {
                 op_result = drv->getDeviceInfo(devinfo);
 
-                if (SL_IS_OK(op_result)) 
+                if (SL_IS_OK(op_result))
                 {
 	                connectSuccess = true;
                 }
                 else{
-                    delete drv;
-					drv = NULL;
+                    drv.reset();
                 }
             }
         }
@@ -195,35 +195,33 @@ int main(int argc, const char * argv[]) {
             size_t baudRateArraySize = (sizeof(baudrateArray))/ (sizeof(baudrateArray[0]));
 			for(size_t i = 0; i < baudRateArraySize; ++i)
 			{
-				_channel = (*createSerialPortChannel(opt_channel_param_first, baudrateArray[i]));
+				_channel = createSerialPortChannel(opt_channel_param_first, baudrateArray[i]);
                 if (SL_IS_OK((drv)->connect(_channel))) {
                     op_result = drv->getDeviceInfo(devinfo);
 
-                    if (SL_IS_OK(op_result)) 
+                    if (SL_IS_OK(op_result))
                     {
 	                    connectSuccess = true;
                         break;
                     }
                     else{
-                        delete drv;
-					    drv = NULL;
+                        drv.reset();
                     }
                 }
 			}
         }
     }
     else if(opt_channel_type == CHANNEL_TYPE_UDP){
-        _channel = *createUdpChannel(opt_channel_param_first, opt_channel_param_second);
+        _channel = createUdpChannel(opt_channel_param_first, opt_channel_param_second);
         if (SL_IS_OK((drv)->connect(_channel))) {
             op_result = drv->getDeviceInfo(devinfo);
 
-            if (SL_IS_OK(op_result)) 
+            if (SL_IS_OK(op_result))
             {
 	            connectSuccess = true;
             }
             else{
-                delete drv;
-				drv = NULL;
+                drv.reset();
             }
         }
     }
@@ -234,7 +232,7 @@ int main(int argc, const char * argv[]) {
 			(fprintf(stderr, "Error, cannot bind to the specified serial port %s.\n"
 				, opt_channel_param_first)):(fprintf(stderr, "Error, cannot connect to the specified ip addr %s.\n"
 				, opt_channel_param_first));
-		
+
         goto on_finished;
     }
 
@@ -259,7 +257,7 @@ int main(int argc, const char * argv[]) {
     }
 
     signal(SIGINT, ctrlc);
-    
+
 	if(opt_channel_type == CHANNEL_TYPE_SERIALPORT)
         drv->setMotorSpeed();
     // start scan...
@@ -275,15 +273,15 @@ int main(int argc, const char * argv[]) {
         if (SL_IS_OK(op_result)) {
             drv->ascendScanData(nodes, count);
             for (int pos = 0; pos < (int)count ; ++pos) {
-                printf("%s theta: %03.2f Dist: %08.2f Q: %d \n", 
-                    (nodes[pos].flag & SL_LIDAR_RESP_HQ_FLAG_SYNCBIT) ?"S ":"  ", 
+                printf("%s theta: %03.2f Dist: %08.2f Q: %d \n",
+                    (nodes[pos].flag & SL_LIDAR_RESP_HQ_FLAG_SYNCBIT) ?"S ":"  ",
                     (nodes[pos].angle_z_q14 * 90.f) / 16384.f,
                     nodes[pos].dist_mm_q2/4.0f,
                     nodes[pos].quality >> SL_LIDAR_RESP_MEASUREMENT_QUALITY_SHIFT);
             }
         }
 
-        if (ctrl_c_pressed){ 
+        if (ctrl_c_pressed){
             break;
         }
     }
@@ -294,10 +292,6 @@ int main(int argc, const char * argv[]) {
         drv->setMotorSpeed(0);
     // done!
 on_finished:
-    if(drv) {
-        delete drv;
-        drv = NULL;
-    }
     return 0;
 }
 

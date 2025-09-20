@@ -41,7 +41,7 @@ namespace sl { namespace internal {
 class _single_thread ProtocolMessage {
 
 public:
-	size_t len;			
+	size_t len;
 	_u8 cmd;
 protected:
 	_u8* data;
@@ -113,15 +113,14 @@ public:
 	AsyncTransceiver(IAsyncProtocolCodec& codec);
 	~AsyncTransceiver();
 
-
-
-	u_result openChannelAndBind(IChannel* channel);
+	u_result openChannelAndBind(std::shared_ptr<IChannel> channel);
 	void     unbindAndClose();
 
-	IChannel* getBindedChannel() const {
+	std::shared_ptr<IChannel> getBindedChannel()
+	{
 		return _bindedChannel;
 	}
-	
+
 	u_result sendMessage(message_autoptr_t& msg);
 
 protected:
@@ -136,7 +135,7 @@ protected:
 	rp::hal::Locker _rxLocker;
 	rp::hal::Event  _dataEvt;
 
-	IChannel* _bindedChannel;
+	std::shared_ptr<IChannel> _bindedChannel;
 	IAsyncProtocolCodec& _codec;
 
 

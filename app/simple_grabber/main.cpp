@@ -27,8 +27,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <memory>
 
-#include "sl_lidar.h" 
+#include "sl_lidar.h"
 #include "sl_lidar_driver.h"
 
 #ifndef _countof
@@ -110,10 +111,10 @@ void plot_histogram(sl_lidar_response_measurement_node_hq_t * nodes, size_t coun
     printf("\n");
 }
 
-sl_result capture_and_display(ILidarDriver * drv)
+sl_result capture_and_display(std::shared_ptr<ILidarDriver> drv)
 {
     sl_result ans;
-    
+
 	sl_lidar_response_measurement_node_hq_t nodes[8192];
     size_t   count = _countof(nodes);
 
@@ -128,8 +129,8 @@ sl_result capture_and_display(ILidarDriver * drv)
         int key = getchar();
         if (key == 'Y' || key == 'y') {
             for (int pos = 0; pos < (int)count ; ++pos) {
-				printf("%s theta: %03.2f Dist: %08.2f \n", 
-                    (nodes[pos].flag & SL_LIDAR_RESP_HQ_FLAG_SYNCBIT) ?"S ":"  ", 
+				printf("%s theta: %03.2f Dist: %08.2f \n",
+                    (nodes[pos].flag & SL_LIDAR_RESP_HQ_FLAG_SYNCBIT) ?"S ":"  ",
                     (nodes[pos].angle_z_q14 * 90.f) / 16384.f,
                     nodes[pos].dist_mm_q2/4.0f);
             }
@@ -148,7 +149,7 @@ int main(int argc, const char * argv[]) {
     sl_result   op_result;
 	int         opt_channel_type = CHANNEL_TYPE_SERIALPORT;
 
-    IChannel* _channel;
+    std::shared_ptr<IChannel> _channel;
 
     if (argc < 5) {
         print_usage(argc, argv);
@@ -183,7 +184,7 @@ int main(int argc, const char * argv[]) {
 	}
 
     // create the driver instance
-	ILidarDriver * drv = *createLidarDriver();
+	auto drv = createLidarDriver();
 
     if (!drv) {
         fprintf(stderr, "insufficent memory, exit\n");
@@ -195,14 +196,14 @@ int main(int argc, const char * argv[]) {
     do {
         // try to connect
         if (opt_channel_type == CHANNEL_TYPE_SERIALPORT) {
-            _channel = (*createSerialPortChannel(opt_channel_param_first, opt_channel_param_second));
+            _channel = createSerialPortChannel(opt_channel_param_first, opt_channel_param_second);
         }
         else if (opt_channel_type == CHANNEL_TYPE_UDP) {
-            _channel = *createUdpChannel(opt_channel_param_first, opt_channel_param_second);
+            _channel = createUdpChannel(opt_channel_param_first, opt_channel_param_second);
         }
-        
+
         if (SL_IS_FAIL((drv)->connect(_channel))) {
-			switch (opt_channel_type) {	
+			switch (opt_channel_type) {
 				case CHANNEL_TYPE_SERIALPORT:
 					fprintf(stderr, "Error, cannot bind to the specified serial port %s.\n"
 						, opt_channel_param_first);
@@ -250,7 +251,7 @@ int main(int argc, const char * argv[]) {
         op_result = drv->getHealth(healthinfo);
         if (SL_IS_OK(op_result)) { // the macro IS_OK is the preperred way to judge whether the operation is succeed.
             printf("Lidar health status : ");
-            switch (healthinfo.status) 
+            switch (healthinfo.status)
 			{
 				case SL_LIDAR_STATUS_OK:
 					printf("OK.");
@@ -277,8 +278,8 @@ int main(int argc, const char * argv[]) {
             break;
         }
 
-		switch (opt_channel_type) 
-		{	
+		switch (opt_channel_type)
+		{
 			case CHANNEL_TYPE_SERIALPORT:
 				drv->setMotorSpeed();
 			break;
@@ -303,16 +304,13 @@ int main(int argc, const char * argv[]) {
     } while(0);
 
     drv->stop();
-    switch (opt_channel_type) 
-	{	
+    switch (opt_channel_type)
+	{
 		case CHANNEL_TYPE_SERIALPORT:
 			delay(20);
 			drv->setMotorSpeed(0);
 		break;
 	}
-    if(drv) {
-        delete drv;
-        drv = NULL;
-    }
+
     return 0;
 }

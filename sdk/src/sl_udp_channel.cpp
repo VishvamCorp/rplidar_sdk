@@ -34,6 +34,7 @@
 #include "hal/abs_rxtx.h"
 #include "hal/socket.h"
 
+#include <memory>
 
 namespace sl {
 	class UdpChannel : public IChannel
@@ -54,7 +55,7 @@ namespace sl {
         {
             if(!bind(_ip, _port))
                 return false;
-            return SL_IS_OK(_binded_socket->setPairAddress(&_socket));         
+            return SL_IS_OK(_binded_socket->setPairAddress(&_socket));
         }
 
         void close()
@@ -102,7 +103,7 @@ namespace sl {
             u_result ans = _binded_socket->recvFrom(buffer, size, actualGet);
             if (IS_FAIL(ans)) return 0;
             return actualGet;
-        
+
         }
 
         void clearReadCache() {
@@ -110,7 +111,7 @@ namespace sl {
         }
 
         void setStatus(_u32 flag){}
-        
+
         int getChannelType() {
             return CHANNEL_TYPE_UDP;
         }
@@ -122,8 +123,8 @@ namespace sl {
         int _port;
 	};
 
-    Result<IChannel*> createUdpChannel(const std::string& ip, int port)
+    std::shared_ptr<IChannel> createUdpChannel(const std::string& ip, int port)
     {
-        return new  UdpChannel(ip, port);
+        return std::make_shared<UdpChannel>(ip, port);
     }
 }

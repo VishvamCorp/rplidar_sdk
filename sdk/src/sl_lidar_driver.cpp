@@ -470,7 +470,7 @@ namespace sl {
             return SL_RESULT_OK;
         }
 
-        sl_result connect(IChannel* channel)
+        sl_result connect(std::shared_ptr<IChannel> channel)
         {
             rp::hal::AutoLocker l(_op_locker);
             if (!channel) return SL_RESULT_OPERATION_FAIL;
@@ -990,15 +990,16 @@ namespace sl {
             switch (_isSupportingMotorCtrl)
             {
             case MotorCtrlSupportNone:
-                if (_transeiver->getBindedChannel()->getChannelType() == CHANNEL_TYPE_SERIALPORT) {
-                    ISerialPortChannel* serialChanel = (ISerialPortChannel*)_transeiver->getBindedChannel();
-                    if (!speed) {
-                        serialChanel->setDTR(true);
-                    }else{
-                        serialChanel->setDTR(false);
+                {
+                    auto ch = _transeiver->getBindedChannel();
+                    if (ch && ch->getChannelType() == CHANNEL_TYPE_SERIALPORT) {
+                        auto serialChannel = std::dynamic_pointer_cast<ISerialPortChannel>(ch);
+                        if (serialChannel) {
+                            serialChannel->setDTR(speed == 0);
+                        }
                     }
                 }
-                break;
+                 break;
             case MotorCtrlSupportPwm:
                 sl_lidar_payload_motor_pwm_t motor_pwm;
                 motor_pwm.pwm_value = speed;
@@ -1062,7 +1063,7 @@ namespace sl {
 
             rp::hal::AutoLocker l(_op_locker);
 
-            IChannel* cachedChannel = _transeiver->getBindedChannel();
+            auto cachedChannel = _transeiver->getBindedChannel();
             if (!cachedChannel) return SL_RESULT_OPERATION_FAIL;
             if (cachedChannel->getChannelType() != CHANNEL_TYPE_SERIALPORT)
             {
@@ -1695,8 +1696,8 @@ namespace sl {
 
     };
 
-    Result<ILidarDriver*> createLidarDriver()
+    std::shared_ptr<ILidarDriver> createLidarDriver()
     {
-        return new SlamtecLidarDriver();
+        return std::make_shared<SlamtecLidarDriver>();
     }
 }

@@ -34,8 +34,9 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
+#include <memory>
 
-#include "sl_lidar.h" 
+#include "sl_lidar.h"
 #include "sl_lidar_driver.h"
 #ifndef _countof
 #define _countof(_Array) (int)(sizeof(_Array) / sizeof(_Array[0]))
@@ -76,7 +77,7 @@ int main(int argc, const char* argv[]) {
     sl_u32      opt_required_baudrate = 460000;
     sl_result   op_result;
 
-    IChannel* _channel;
+    std::shared_ptr<IChannel> _channel;
 
     printf("Baudrate negotiation demo for SLAMTEC LIDAR.\n");
 
@@ -102,7 +103,7 @@ int main(int argc, const char* argv[]) {
     }
 
     // create the driver instance
-    ILidarDriver* drv = *createLidarDriver();
+    auto drv = createLidarDriver();
 
     if (!drv) {
         fprintf(stderr, "insufficent memory, exit\n");
@@ -111,7 +112,7 @@ int main(int argc, const char* argv[]) {
 
     printf("Try to establish communication to the LIDAR using the baudrate at %s@%d ...\n", opt_port_dev, opt_required_baudrate);
 
-    _channel = (*createSerialPortChannel(opt_port_dev, opt_required_baudrate));
+    _channel = createSerialPortChannel(opt_port_dev, opt_required_baudrate);
 
     do {
 
@@ -121,7 +122,7 @@ int main(int argc, const char* argv[]) {
         }
 
 
-        // the same baudrate value must be used here 
+        // the same baudrate value must be used here
         sl_u32 baudrateDetected;
         if (SL_IS_FAIL((drv)->negotiateSerialBaudRate(opt_required_baudrate, &baudrateDetected)))
         {
@@ -173,8 +174,6 @@ int main(int argc, const char* argv[]) {
 
     } while (0);
 
-    delete drv;
-    delete _channel;
     return 0;
 }
 
